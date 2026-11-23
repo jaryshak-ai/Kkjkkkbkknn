@@ -1,0 +1,409 @@
+name: Build Donate
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Create project files
+        run: |
+          mkdir -p proj/src/main/java/donate proj/src/main/resources
+          cd proj
+          cat > pom.xml <<'DONATE_EOF_0'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project xmlns="http://maven.apache.org/POM/4.0.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+
+            <groupId>donate</groupId>
+            <artifactId>Donate</artifactId>
+            <version>1.0.0</version>
+            <packaging>jar</packaging>
+
+            <properties>
+              <maven.compiler.release>17</maven.compiler.release>
+              <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+            </properties>
+
+            <repositories>
+              <repository>
+                <id>repo-lanink-cn</id>
+                <url>https://repo.lanink.cn/repository/maven-public/</url>
+              </repository>
+            </repositories>
+
+            <dependencies>
+              <dependency>
+                <groupId>com.nukkit-mot</groupId>
+                <artifactId>nukkit-mot</artifactId>
+                <version>1.26.40-R1</version>
+                <scope>provided</scope>
+              </dependency>
+              <dependency>
+                <groupId>net.luckperms</groupId>
+                <artifactId>api</artifactId>
+                <version>5.4</version>
+                <scope>provided</scope>
+              </dependency>
+            </dependencies>
+
+            <build>
+              <finalName>Donate</finalName>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-compiler-plugin</artifactId>
+                  <version>3.11.0</version>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+          DONATE_EOF_0
+
+          cat > src/main/resources/plugin.yml <<'DONATE_EOF_1'
+          name: Donate
+          main: donate.DonatePlugin
+          version: 1.0.0
+          api: ["1.0.0"]
+          author: Eclips
+          softdepend: [LuckPerms]
+          description: Меню привилегий /donate
+          commands:
+            donate:
+              description: Список донат-привилегий
+              usage: /donate
+          DONATE_EOF_1
+
+          cat > src/main/resources/config.yml <<'DONATE_EOF_2'
+          # Donate - меню привилегий (/donate)
+          # Название привилегии берётся из LuckPerms (display name группы), цвет - из префикса группы.
+          # Если LuckPerms недоступен или у группы нет префикса/названия - используются name и color отсюда.
+          # Цвета: §0-§9, §a-§f. Ключ группы (vip, premium...) = имя группы в LuckPerms.
+
+          title: "§lДонат"
+
+          # Текст над списком привилегий (можно несколько строк через \n)
+          header: "Для покупки пишите в телеграм @Mysticwinds21."
+
+          # Заголовок списка привилегий в главном меню (оставьте "" чтобы убрать)
+          list-title: ""
+
+          # Кнопка возврата в окне привилегии
+          back-button: "§l← Назад"
+
+          # Сообщение, если у игрока нет прав / консоль
+          console-message: "Команда только для игроков."
+
+          # Строки привилегии: если строка начинается с "/" - формат "команда - описание"
+          # (делится по первому " - "), остальные строки выводятся как есть.
+          groups:
+            vip:
+              name: "Вип"
+              color: "§9"
+              lines:
+                - "Кит Вип"
+                - "/day - включить день"
+                - "/craft - открыть верстак"
+                - "/ec - открыть эндер-сундук"
+                - "/firework - фейерверк над игроком"
+            premium:
+              name: "Премиум"
+              color: "§6"
+              lines:
+                - "Все возможности Вип"
+                - "Кит Премиум"
+                - "/heal - восстановить здоровье"
+                - "/jump - высокий прыжок"
+                - "/milk - снять все эффекты"
+                - "/suicide - умереть"
+                - "/anvil - открыть наковальню"
+                - "/condense - собрать одинаковые предметы в полные стаки"
+                - "/breath - дыхание под водой"
+            ultra:
+              name: "Ультра"
+              color: "§d"
+              lines:
+                - "Все возможности Премиум"
+                - "Кит Ультра"
+                - "/timefly - включить или выключить полёт"
+                - "/mol - ударить игрока молнией"
+                - "/night - выдать себе ночное зрение"
+                - "/setnight - установить ночь на сервере"
+                - "/furnace - открыть печку"
+                - "/smelt - переплавить всю стопку руды в руке"
+                - "/fix - починить предмет в руке"
+                - "/nofall - отключить урон от падения"
+            king:
+              name: "Король"
+              color: "§a"
+              lines:
+                - "Все возможности Ультра"
+                - "Кит Король"
+                - "/fire - поджечь игрока"
+                - "/v - невидемость"
+                - "/dkick <ник> <причина> - кикнуть игрока"
+                - "/rename - переименовать предмет в руке"
+                - "/compress - сжать слитки в блоки"
+                - "/waterwalk - ходьба по воде"
+                - "/tpback - вернуться на место последней смерти"
+            sponsor:
+              name: "Спонсор"
+              color: "§e"
+              lines:
+                - "Все возможности Король"
+                - "Кит Спонсор"
+                - "/dmute <ник> <время> <причина> - замутить игрока"
+                - "/dunmute <ник> - снять мут"
+                - "/treecap - срубить дерево целиком"
+                - "/dheal <ник> - вылечить игрока"
+            elita:
+              name: "Элита"
+              color: "§2"
+              lines:
+                - "Все возможности Спонсор"
+                - "Кит Элита"
+                - "/size - изменить размер персонажа"
+                - "/dpremium <ник> - выдать игроку Премиум на 60 минут"
+                - "/sp - режим наблюдателя"
+                - "/spoff - выйти из режима наблюдателя"
+                - "/repairall - починить всю броню и инструменты"
+                - "/dinvsee <ник> - посмотреть инвентарь игрока"
+            helper:
+              name: "Хелпер"
+              color: "§8"
+              lines:
+                - "Все возможности Элита"
+                - "Кит Хелпер"
+                - "/creep - заспавнить криперов рядом с игроком"
+                - "/speed - изменить скорость"
+                - "/vtp - телепорт к игроку без разрешения"
+                - "/dban <ник> <минуты> <причина> - забанить игрока"
+                - "/dunban <ник> - разбанить игрока"
+                - "/dprem+ <ник> - выдать игроку Премиум на 24 часа"
+          DONATE_EOF_2
+
+          cat > src/main/java/donate/DonatePlugin.java <<'DONATE_EOF_3'
+          package donate;
+
+          import cn.nukkit.Player;
+          import cn.nukkit.command.Command;
+          import cn.nukkit.command.CommandSender;
+          import cn.nukkit.event.EventHandler;
+          import cn.nukkit.event.Listener;
+          import cn.nukkit.event.player.PlayerFormRespondedEvent;
+          import cn.nukkit.event.player.PlayerQuitEvent;
+          import cn.nukkit.form.element.ElementButton;
+          import cn.nukkit.form.response.FormResponseSimple;
+          import cn.nukkit.form.window.FormWindowSimple;
+          import cn.nukkit.plugin.PluginBase;
+          import cn.nukkit.utils.ConfigSection;
+          import net.luckperms.api.LuckPerms;
+          import net.luckperms.api.LuckPermsProvider;
+          import net.luckperms.api.model.group.Group;
+
+          import java.util.ArrayList;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.UUID;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
+
+          public class DonatePlugin extends PluginBase implements Listener {
+
+              private static final Pattern COLOR = Pattern.compile("[&§]([0-9a-fA-F])");
+
+              private static class State {
+                  final int formId;
+                  final int groupIndex; // -1 = главное меню, иначе открыто окно привилегии
+
+                  State(int formId, int groupIndex) {
+                      this.formId = formId;
+                      this.groupIndex = groupIndex;
+                  }
+              }
+
+              private static class Rank {
+                  String key;
+                  String name;
+                  String color;
+                  List<String> lines;
+              }
+
+              private final Map<UUID, State> pending = new HashMap<>();
+
+              @Override
+              public void onEnable() {
+                  saveDefaultConfig();
+                  getServer().getPluginManager().registerEvents(this, this);
+              }
+
+              @Override
+              public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+                  if (!command.getName().equalsIgnoreCase("donate")) {
+                      return false;
+                  }
+                  if (args.length > 0 && args[0].equalsIgnoreCase("reload") && sender.isOp()) {
+                      reloadConfig();
+                      sender.sendMessage("§aКонфиг Donate перезагружен.");
+                      return true;
+                  }
+                  if (!(sender instanceof Player)) {
+                      sender.sendMessage(getConfig().getString("console-message", "Команда только для игроков."));
+                      return true;
+                  }
+                  openMain((Player) sender);
+                  return true;
+              }
+
+              // ---------- Данные о привилегиях ----------
+
+              private LuckPerms luckPerms() {
+                  try {
+                      if (getServer().getPluginManager().getPlugin("LuckPerms") == null) {
+                          return null;
+                      }
+                      return LuckPermsProvider.get();
+                  } catch (Throwable t) {
+                      return null;
+                  }
+              }
+
+              private List<Rank> loadRanks() {
+                  List<Rank> ranks = new ArrayList<>();
+                  ConfigSection groups = getConfig().getSection("groups");
+                  if (groups == null) {
+                      return ranks;
+                  }
+                  LuckPerms lp = luckPerms();
+                  for (String key : groups.getKeys(false)) {
+                      ConfigSection sec = groups.getSection(key);
+                      Rank r = new Rank();
+                      r.key = key;
+                      r.name = sec.getString("name", key);
+                      r.color = sec.getString("color", "§f");
+                      r.lines = sec.getStringList("lines");
+
+                      if (lp != null) {
+                          try {
+                              Group g = lp.getGroupManager().getGroup(key);
+                              if (g != null) {
+                                  String friendly = g.getFriendlyName();
+                                  if (friendly != null && !friendly.isEmpty()) {
+                                      r.name = friendly;
+                                  }
+                                  String prefix = g.getCachedData().getMetaData().getPrefix();
+                                  if (prefix != null) {
+                                      Matcher m = COLOR.matcher(prefix);
+                                      if (m.find()) {
+                                          r.color = "§" + m.group(1).toLowerCase();
+                                      }
+                                  }
+                              }
+                          } catch (Throwable ignored) {
+                              // остаются значения из конфига
+                          }
+                      }
+                      ranks.add(r);
+                  }
+                  return ranks;
+              }
+
+              // ---------- Формы ----------
+
+              private void openMain(Player player) {
+                  List<Rank> ranks = loadRanks();
+
+                  StringBuilder content = new StringBuilder();
+                  content.append(getConfig().getString("header", "")).append("\n\n");
+                  String listTitle = getConfig().getString("list-title", "");
+                  if (!listTitle.isEmpty()) {
+                      content.append(listTitle).append("\n");
+                  }
+                  for (Rank r : ranks) {
+                      content.append("§l").append(r.color).append(r.name).append("§r\n");
+                  }
+
+                  FormWindowSimple form = new FormWindowSimple(getConfig().getString("title", "§lДонат"), content.toString());
+                  for (Rank r : ranks) {
+                      form.addButton(new ElementButton("§l" + r.color + r.name));
+                  }
+                  int id = player.showFormWindow(form);
+                  pending.put(player.getUniqueId(), new State(id, -1));
+              }
+
+              private void openRank(Player player, int index) {
+                  List<Rank> ranks = loadRanks();
+                  if (index < 0 || index >= ranks.size()) {
+                      openMain(player);
+                      return;
+                  }
+                  Rank r = ranks.get(index);
+
+                  StringBuilder content = new StringBuilder();
+                  content.append("§l").append(r.color).append(r.name).append("§r\n\n");
+                  for (String line : r.lines) {
+                      if (line.startsWith("/")) {
+                          int split = line.indexOf(" - ");
+                          if (split > 0) {
+                              String cmd = line.substring(0, split);
+                              String desc = line.substring(split + 3);
+                              content.append("§f").append(cmd).append(" §7- ").append(desc).append("§r\n");
+                              continue;
+                          }
+                      }
+                      content.append("§f").append(line).append("§r\n");
+                  }
+
+                  FormWindowSimple form = new FormWindowSimple("§l" + r.color + r.name, content.toString());
+                  form.addButton(new ElementButton(getConfig().getString("back-button", "§l← Назад")));
+                  int id = player.showFormWindow(form);
+                  pending.put(player.getUniqueId(), new State(id, index));
+              }
+
+              @EventHandler
+              public void onForm(PlayerFormRespondedEvent event) {
+                  Player player = event.getPlayer();
+                  State state = pending.get(player.getUniqueId());
+                  if (state == null || state.formId != event.getFormID()) {
+                      return;
+                  }
+                  pending.remove(player.getUniqueId());
+
+                  if (event.wasClosed() || !(event.getResponse() instanceof FormResponseSimple)) {
+                      return;
+                  }
+                  int clicked = ((FormResponseSimple) event.getResponse()).getClickedButtonId();
+
+                  if (state.groupIndex == -1) {
+                      openRank(player, clicked);
+                  } else {
+                      openMain(player);
+                  }
+              }
+
+              @EventHandler
+              public void onQuit(PlayerQuitEvent event) {
+                  pending.remove(event.getPlayer().getUniqueId());
+              }
+          }
+          DONATE_EOF_3
+
+      - name: Build with Maven
+        run: mvn -B -f proj/pom.xml clean package
+
+      - name: Upload Donate.jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Donate
+          path: proj/target/Donate.jar
